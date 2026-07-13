@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Finder Demo</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+        .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 20px; background: #f9f9f9; }
+        button { background: #007BFF; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <h2>Visitor Location Dashboard</h2>
+    <p>This demo highlights the differences between approximate network data and precise device permissions.</p>
+
+    <!-- Section 1: Approximate IP Geolocation -->
+    <div class="card">
+        <h3>1. Approximate Data (From IP Address)</h3>
+        <p><strong>IP Address:</strong> <span id="ip-address">Loading...</span></p>
+        <p><strong>Estimated City:</strong> <span id="ip-city">Loading...</span></p>
+        <p><strong>Estimated Country:</strong> <span id="ip-country">Loading...</span></p>
+        <p><strong>ISP Provider:</strong> <span id="ip-isp">Loading...</span></p>
+    </div>
+
+    <!-- Section 2: Precise Device Geolocation -->
+    <div class="card">
+        <h3>2. Precise Data (Requires Permission)</h3>
+        <p>To get exact coordinates, the browser must explicitly ask the user for consent.</p>
+        <button onclick="getExactLocation()">Request Exact Location</button>
+        <p id="gps-output" style="margin-top: 15px; font-weight: bold;"></p>
+    </div>
+
+    <script>
+        // Fetch approximate location using the free ip-api service
+        async function fetchIPLocation() {
+            try {
+                const response = await fetch('https://ip-api.com');
+                const data = await response.json();
+                
+                if(data.status === "success") {
+                    document.getElementById('ip-address').innerText = data.query;
+                    document.getElementById('ip-city').innerText = data.city;
+                    document.getElementById('ip-country').innerText = data.country;
+                    document.getElementById('ip-isp').innerText = data.isp;
+                } else {
+                    document.getElementById('ip-address').innerText = "Failed to load.";
+                }
+            } catch (error) {
+                console.error("Error fetching IP data:", error);
+            }
+        }
+
+        // Request high-accuracy GPS coordinates via native Browser API
+        function getExactLocation() {
+            const output = document.getElementById('gps-output');
+            
+            if (!navigator.geolocation) {
+                output.innerText = "Geolocation is not supported by your browser.";
+                return;
+            }
+
+            output.innerText = "Locating...";
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    output.innerHTML = `Exact Coordinates Found!<br>Latitude: ${lat}<br>Longitude: ${lon}`;
+                },
+                (error) => {
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            output.innerText = "User denied the request for Geolocation.";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            output.innerText = "Location information is unavailable.";
+                            break;
+                        case error.TIMEOUT:
+                            output.innerText = "The request to get user location timed out.";
+                            break;
+                        default:
+                            output.innerText = "An unknown error occurred.";
+                            break;
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            );
+        }
+
+        // Run the IP lookups on page load
+        window.onload = fetchIPLocation;
+    </script>
+</body>
+</html>
